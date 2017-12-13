@@ -1,75 +1,65 @@
-$(document).ready(function() {
-	$('#fullpage').fullpage({
-		//Navigation
-		menu: '#myMenu',
-		lockAnchors: false,
-		anchors:['firstPage', 'secondPage', 'thirdPage' ,'fourthPage'],
-		navigation: false,
-		navigationPosition: 'right',
-		navigationTooltips: ['firstSlide', 'secondSlide'],
-		showActiveTooltip: false,
-		slidesNavigation: false,
-		slidesNavPosition: 'bottom',
+// ------------- VARIABLES ------------- //
+var ticking = false;
+var isFirefox = (/Firefox/i.test(navigator.userAgent));
+var isIe = (/MSIE/i.test(navigator.userAgent)) || (/Trident.*rv\:11\./i.test(navigator.userAgent));
+var scrollSensitivitySetting = 30; //Increase/decrease this number to change sensitivity to trackpad gestures (up = less sensitive; down = more sensitive)
+var slideDurationSetting = 600; //Amount of time for which slide is "locked"
+var currentSlideNumber = 0;
+var totalSlideNumber = $(".background").length;
 
-		//Scrolling
-		css3: true,
-		scrollingSpeed: 700,
-		autoScrolling: true,
-		fitToSection: true,
-		fitToSectionDelay: 1000,
-		scrollBar: false,
-		easing: 'easeInOutCubic',
-		easingcss3: 'ease',
-		loopBottom: false,
-		loopTop: false,
-		loopHorizontal: true,
-		continuousVertical: false,
-		continuousHorizontal: false,
-		scrollHorizontally: false,
-		interlockedSlides: false,
-		dragAndMove: false,
-		offsetSections: false,
-		resetSliders: false,
-		fadingEffect: false,
-		normalScrollElements: '#element1, .element2',
-		scrollOverflow: false,
-		scrollOverflowReset: false,
-		scrollOverflowOptions: null,
-		touchSensitivity: 15,
-		normalScrollElementTouchThreshold: 5,
-		bigSectionsDestination: null,
+// ------------- DETERMINE DELTA/SCROLL DIRECTION ------------- //
+function parallaxScroll(evt) {
+  if (isFirefox) {
+    //Set delta for Firefox
+    delta = evt.detail * (-120);
+  } else if (isIe) {
+    //Set delta for IE
+    delta = -evt.deltaY;
+  } else {
+    //Set delta for all other browsers
+    delta = evt.wheelDelta;
+  }
 
-		//Accessibility
-		keyboardScrolling: true,
-		animateAnchor: true,
-		recordHistory: true,
+  if (ticking != true) {
+    if (delta <= -scrollSensitivitySetting) {
+      //Down scroll
+      ticking = true;
+      if (currentSlideNumber !== totalSlideNumber - 1) {
+        currentSlideNumber++;
+        nextItem();
+      }
+      slideDurationTimeout(slideDurationSetting);
+    }
+    if (delta >= scrollSensitivitySetting) {
+      //Up scroll
+      ticking = true;
+      if (currentSlideNumber !== 0) {
+        currentSlideNumber--;
+      }
+      previousItem();
+      slideDurationTimeout(slideDurationSetting);
+    }
+  }
+}
 
-		//Design
-		controlArrows: true,
-		verticalCentered: true,
-		sectionsColor : ['#ccc', '#fff'],
-		paddingTop: '3em',
-		paddingBottom: '10px',
-		fixedElements: '#header, .footer',
-		responsiveWidth: 0,
-		responsiveHeight: 0,
-		responsiveSlides: false,
-		parallax: false,
-		parallaxOptions: {type: 'reveal', percentage: 62, property: 'translate'},
+// ------------- SET TIMEOUT TO TEMPORARILY "LOCK" SLIDES ------------- //
+function slideDurationTimeout(slideDuration) {
+  setTimeout(function() {
+    ticking = false;
+  }, slideDuration);
+}
 
-		//Custom selectors
-		sectionSelector: '.section',
-		slideSelector: '.slide',
+// ------------- ADD EVENT LISTENER ------------- //
+var mousewheelEvent = isFirefox ? "DOMMouseScroll" : "wheel";
+window.addEventListener(mousewheelEvent, _.throttle(parallaxScroll, 60), false);
 
-		lazyLoading: true,
+// ------------- SLIDE MOTION ------------- //
+function nextItem() {
+  var $previousSlide = $(".background").eq(currentSlideNumber - 1);
+  $previousSlide.removeClass("up-scroll").addClass("down-scroll");
+}
 
-		//events
-		onLeave: function(index, nextIndex, direction){},
-		afterLoad: function(anchorLink, index){},
-		afterRender: function(){},
-		afterResize: function(){},
-		afterResponsive: function(isResponsive){},
-		afterSlideLoad: function(anchorLink, index, slideAnchor, slideIndex){},
-		onSlideLeave: function(anchorLink, index, slideIndex, direction, nextSlideIndex){}
-	});
-});
+function previousItem() {
+  var $currentSlide = $(".background").eq(currentSlideNumber);
+  $currentSlide.removeClass("down-scroll").addClass("up-scroll");
+}
